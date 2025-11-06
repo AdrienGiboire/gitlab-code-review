@@ -1,0 +1,11 @@
+<div class="card">
+  <h1>New Export</h1>
+  <%= form_with url: exports_path, method: :post do |f| %>
+    <div>
+      <%= f.label :mr_url, "Merge Request URL" %>
+      <%= f.url_field :mr_url, placeholder: "https://gitlab.com/ILL/project/-/merge_requests/123", required: true %>
+    </div>
+    <%= f.button "Export", class: "btn" %>
+    <a href="<%= exports_path %>" style="margin-left: 10px;">Cancel</a>
+  <% end %>
+</div>

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+GITLAB_TOKEN=$(cat .gitlab.pwd) docker compose -f .devcontainer/docker-compose.yml up -d --remove-orphans

@@ -1,0 +1,123 @@
+<div class="card">
+  <h1><%= @export.mr_title %></h1>
+  <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin-bottom: 24px; color: #6b7280;">
+    <strong>Project:</strong> <code><%= @export.project_path %></code>
+    <strong>MR:</strong> <span>#<%= @export.mr_iid %></span>
+    <strong>Author:</strong> <span><%= @export.mr_author %></span>
+    <strong>State:</strong> <span style="padding: 4px 8px; border-radius: 4px; background: <%= @export.mr_state == 'opened' ? '#dcfce7' : '#f3f4f6' %>; color: <%= @export.mr_state == 'opened' ? '#166534' : '#374151' %>;"><%= @export.mr_state %></span>
+    <strong>URL:</strong> <a href="<%= @export.mr_url %>" target="_blank"><%= @export.mr_url %></a>
+    <strong>Exported:</strong> <span><%= @export.created_at.strftime('%Y-%m-%d %H:%M') %></span>
+  </div>
+</div>
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="margin: 0;">Feedback (<span id="feedback-count"><%= @export.data.dig('feedback')&.length || 0 %></span> comments)</h2>
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <input type="checkbox" id="hide-reviewed" onchange="toggleReviewed()">
+      <span>Hide reviewed</span>
+    </label>
+  </div>
+<% feedback = @export.data.dig('feedback') || [] %>
+<% reviewed_ids = @export.feedbacks.reviewed.pluck(:feedback_id) %>
+  <% if feedback.any? %>
+    <% feedback.each do |item| %>
+      <% next unless item['id'] %>
+      <% is_reviewed = reviewed_ids.include?(item['id'].to_s) %>
+      <div class="feedback-item" data-reviewed="<%= is_reviewed %>" style="padding: 16px; border-left: 3px solid <%= is_reviewed ? '#22c55e' : '#2563eb' %>; background: <%= is_reviewed ? '#f0fdf4' : '#f9fafb' %>; margin-bottom: 16px; border-radius: 4px;">
+        <div style="margin-bottom: 8px; color: #6b7280; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="color: #1f2937;"><%= item['author'] %></strong>
+            <% if item['file'] %>
+              • <code style="background: #e5e7eb;"><%= item['file'] %><% if item['line'] %>:<%= item['line'] %><% end %></code>
+              <button onclick="navigator.clipboard.writeText('<%= item['file'] %>'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Path', 2000)" style="border: none; background: none; color: #6b7280; cursor: pointer; padding: 2px 6px; font-size: 12px; text-decoration: underline; margin-left: 6px;">Copy Path</button>
+            <% else %>
+              • <span style="font-style: italic;">General comment</span>
+            <% end %>
+            <% if is_reviewed %>
+              • <span style="color: #22c55e; font-weight: 600;">✓ Reviewed</span>
+            <% end %>
+          </div>
+          <% unless is_reviewed %>
+            <button onclick="markReviewed(<%= item['id'] %>, this.closest('div').closest('div'))" class="btn" style="padding: 6px 12px; font-size: 14px;">
+              Mark Reviewed
+            </button>
+          <% end %>
+        </div>
+        <div style="white-space: pre-wrap; color: #374151;"><%= item['body'] %></div>
+      </div>
+    <% end %>
+  <% else %>
+    <p style="text-align: center; color: #6b7280; margin: 40px 0;">No feedback found.</p>
+  <% end %>
+</div>
+<p style="margin-top: 20px;"><a href="<%= exports_path %>">← Back to exports</a></p>
+
+<script>
+function markReviewed(feedbackId, element) {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  
+  fetch('<%= mark_reviewed_export_feedback_path(@export, ':id') %>'.replace(':id', feedbackId), {
+    method: 'PATCH',
+    headers: {
+      'X-CSRF-Token': csrfToken,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    // Update UI without page reload
+    element.style.borderLeftColor = '#22c55e';
+    element.style.background = '#f0fdf4';
+    element.dataset.reviewed = 'true';
+    
+    // Add reviewed indicator to the author/file line
+    const authorDiv = element.querySelector('div > div');
+    const reviewedSpan = document.createElement('span');
+    reviewedSpan.style.color = '#22c55e';
+    reviewedSpan.style.fontWeight = '600';
+    reviewedSpan.textContent = ' • ✓ Reviewed';
+    authorDiv.appendChild(reviewedSpan);
+    
+    // Remove button
+    const button = element.querySelector('button.btn');
+    if (button) button.remove();
+    
+    // Update count if filter is active
+    updateFeedbackCount();
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Failed to mark as reviewed');
+  });
+}
+
+function toggleReviewed() {
+  const hideReviewed = document.getElementById('hide-reviewed').checked;
+  const items = document.querySelectorAll('.feedback-item');
+  
+  items.forEach(item => {
+    if (hideReviewed && item.dataset.reviewed === 'true') {
+      item.style.display = 'none';
+    } else {
+      item.style.display = 'block';
+    }
+  });
+  
+  updateFeedbackCount();
+}
+
+function updateFeedbackCount() {
+  const hideReviewed = document.getElementById('hide-reviewed').checked;
+  const items = document.querySelectorAll('.feedback-item');
+  let count = 0;
+  
+  items.forEach(item => {
+    if (!hideReviewed || item.dataset.reviewed !== 'true') {
+      count++;
+    }
+  });
+  
+  document.getElementById('feedback-count').textContent = count;
+}
+</script>

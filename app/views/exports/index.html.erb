@@ -1,0 +1,51 @@
+<div class="card">
+  <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 24px;">
+    <h1>Exports</h1>
+    <a href="<%= new_export_path %>" class="btn">New Export</a>
+  </div>
+  <% if @exports.any? %>
+    <table>
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Project</th>
+          <th>MR</th>
+          <th>Title</th>
+          <th>Author</th>
+          <th>State</th>
+          <th>Feedback</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @exports.each do |export| %>
+          <tr>
+            <td><%= export.reviewed ? '✓' : '○' %></td>
+            <td><code><%= export.project_path %></code></td>
+            <td>#<%= export.mr_iid %></td>
+            <td><%= export.mr_title %></td>
+            <td><%= export.mr_author %></td>
+            <td><span style="padding: 4px 8px; border-radius: 4px; background: <%= export.mr_state == 'opened' ? '#dcfce7' : '#f3f4f6' %>; color: <%= export.mr_state == 'opened' ? '#166534' : '#374151' %>;"><%= export.mr_state %></span></td>
+            <td><%= export.data.dig('feedback')&.length || 0 %> comments</td>
+            <td><%= export.created_at.strftime('%Y-%m-%d %H:%M') %></td>
+            <td>
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <a href="<%= export_path(export) %>">View</a>
+                <form action="<%= mark_reviewed_export_path(export) %>" method="post" style="margin: 0;">
+                  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+                  <%= hidden_field_tag :_method, 'patch' %>
+                  <button type="submit" class="mark-reviewed-btn">
+                    <%= export.reviewed ? 'Unmark' : 'Mark Reviewed' %>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p style="text-align: center; color: #6b7280; margin: 40px 0;">No exports yet. <a href="<%= new_export_path %>">Create one</a></p>
+  <% end %>
+</div>

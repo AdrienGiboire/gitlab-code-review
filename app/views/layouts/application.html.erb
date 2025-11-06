@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GitLab Code Review</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header { background: #1f2937; color: white; padding: 20px 0; margin-bottom: 30px; }
+    header h1 { font-size: 24px; font-weight: 600; }
+    .flash { padding: 12px 20px; margin-bottom: 20px; border-radius: 6px; border-left: 4px solid; }
+    .flash.error { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .flash.notice { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .card { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    h1, h2, h3 { margin-bottom: 16px; }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+    .btn:hover { background: #1d4ed8; text-decoration: none; }
+    input[type="text"], input[type="url"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; margin-bottom: 16px; }
+    label { display: block; margin-bottom: 6px; font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f9fafb; font-weight: 600; }
+    tr:hover { background: #f9fafb; }
+    code { background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 14px; }
+    .mark-reviewed-btn { border: none; background: none; color: #2563eb; cursor: pointer; padding: 0; font-size: inherit; text-decoration: none; font-family: inherit; }
+    .mark-reviewed-btn:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="/" style="color: white;">GitLab Code Review</a></h1>
+    </div>
+  </header>
+  <div class="container">
+    <% if flash[:error] %>
+      <div class="flash error"><%= flash[:error] %></div>
+    <% end %>
+    <% if flash[:notice] %>
+      <div class="flash notice"><%= flash[:notice] %></div>
+    <% end %>
+    <%= yield %>
+  </div>
+</body>
+</html>

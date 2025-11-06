@@ -1,0 +1,7 @@
+{
+  "name": "GitLab Code Review",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "bundle install"
+}

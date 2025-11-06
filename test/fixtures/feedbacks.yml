@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  export: one
+  feedback_id: MyString
+  reviewed: false
+
+two:
+  export: two
+  feedback_id: MyString
+  reviewed: false
