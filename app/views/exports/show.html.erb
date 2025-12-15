@@ -44,6 +44,9 @@
                 <% if is_own_comment %>
                   <span style="color: #f59e0b; font-size: 12px; margin-left: 4px;">(You)</span>
                 <% end %>
+                <% if item['web_url'] %>
+                  • <a href="<%= item['web_url'] %>" target="_blank" style="color: #6b7280; text-decoration: none; font-size: 12px;">View in GitLab ↗</a>
+                <% end %>
                 <% if item['file'] && !is_reply %>
                   • <code style="background: #e5e7eb;"><%= item['file'] %><% if item['line'] %>:<%= item['line'] %><% end %></code>
                   <button onclick="navigator.clipboard.writeText('<%= item['file'] %>'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Path', 2000)" style="border: none; background: none; color: #6b7280; cursor: pointer; padding: 2px 6px; font-size: 12px; text-decoration: underline; margin-left: 6px;">Copy Path</button>

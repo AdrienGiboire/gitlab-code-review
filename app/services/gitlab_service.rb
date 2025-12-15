@@ -23,7 +23,7 @@ class GitlabService
       project_path: project_path,
       mr_iid: mr_iid,
       merge_request: format_merge_request(mr),
-      feedback: format_discussions(discussions, check_marks)
+      feedback: format_discussions(discussions, check_marks, mr.web_url)
     }
   end
 
@@ -90,7 +90,7 @@ class GitlabService
     check_marks
   end
 
-  def format_discussions(discussions, check_marks)
+  def format_discussions(discussions, check_marks, mr_web_url)
     feedback = []
 
     discussions.each do |discussion|
@@ -109,7 +109,8 @@ class GitlabService
           body: note.body,
           file: file,
           line: line,
-          has_check_mark: check_marks[note.id] || false
+          has_check_mark: check_marks[note.id] || false,
+          web_url: "#{mr_web_url}#note_#{note.id}"
         }
       end
     end
