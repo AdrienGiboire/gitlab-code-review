@@ -104,6 +104,7 @@ class GitlabService
 
         feedback << {
           id: note.id,
+          discussion_id: discussion.id,
           author: note.author&.username,
           body: note.body,
           file: file,

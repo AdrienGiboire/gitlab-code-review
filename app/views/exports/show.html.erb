@@ -19,31 +19,46 @@
   </div>
 <% feedback = @export.data.dig('feedback') || [] %>
 <% reviewed_ids = @export.feedbacks.reviewed.pluck(:feedback_id) %>
+<% grouped_feedback = feedback.group_by { |item| item['discussion_id'] } %>
   <% if feedback.any? %>
-    <% feedback.each do |item| %>
-      <% next unless item['id'] %>
-      <% is_reviewed = reviewed_ids.include?(item['id'].to_s) %>
-      <div class="feedback-item" data-reviewed="<%= is_reviewed %>" style="padding: 16px; border-left: 3px solid <%= is_reviewed ? '#22c55e' : '#2563eb' %>; background: <%= is_reviewed ? '#f0fdf4' : '#f9fafb' %>; margin-bottom: 16px; border-radius: 4px;">
-        <div style="margin-bottom: 8px; color: #6b7280; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <strong style="color: #1f2937;"><%= item['author'] %></strong>
-            <% if item['file'] %>
-              • <code style="background: #e5e7eb;"><%= item['file'] %><% if item['line'] %>:<%= item['line'] %><% end %></code>
-              <button onclick="navigator.clipboard.writeText('<%= item['file'] %>'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Path', 2000)" style="border: none; background: none; color: #6b7280; cursor: pointer; padding: 2px 6px; font-size: 12px; text-decoration: underline; margin-left: 6px;">Copy Path</button>
-            <% else %>
-              • <span style="font-style: italic;">General comment</span>
-            <% end %>
-            <% if is_reviewed %>
-              • <span style="color: #22c55e; font-weight: 600;">✓ Reviewed</span>
-            <% end %>
+    <% grouped_feedback.each do |discussion_id, thread_items| %>
+      <% thread_items.compact! %>
+      <% next if thread_items.empty? %>
+      <% is_multi_comment = thread_items.length > 1 %>
+      <% thread_all_reviewed = thread_items.all? { |item| reviewed_ids.include?(item['id'].to_s) } %>
+      <div class="thread-container" data-discussion-id="<%= discussion_id %>" data-reviewed="<%= thread_all_reviewed %>" style="margin-bottom: 24px; <%= is_multi_comment ? 'border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; background: #fafafa;' : '' %>">
+        <% if is_multi_comment %>
+          <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; font-weight: 600;">
+            💬 Thread (<%= thread_items.length %> comments)
           </div>
-          <% unless is_reviewed %>
-            <button onclick="markReviewed(<%= item['id'] %>, this.closest('div').closest('div'))" class="btn" style="padding: 6px 12px; font-size: 14px;">
-              Mark Reviewed
-            </button>
-          <% end %>
-        </div>
-        <div style="white-space: pre-wrap; color: #374151;"><%= item['body'] %></div>
+        <% end %>
+        <% thread_items.each_with_index do |item, index| %>
+          <% next unless item['id'] %>
+          <% is_reviewed = reviewed_ids.include?(item['id'].to_s) %>
+          <% is_reply = is_multi_comment && index > 0 %>
+          <div class="feedback-item" data-reviewed="<%= is_reviewed %>" style="padding: 16px; border-left: 3px solid <%= is_reviewed ? '#22c55e' : '#2563eb' %>; background: <%= is_reviewed ? '#f0fdf4' : '#ffffff' %>; margin-bottom: <%= is_multi_comment ? '12px' : '16px' %>; border-radius: 4px; <%= is_reply ? 'margin-left: 24px;' : '' %>">
+            <div style="margin-bottom: 8px; color: #6b7280; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="color: #1f2937;"><%= item['author'] %></strong>
+                <% if item['file'] && !is_reply %>
+                  • <code style="background: #e5e7eb;"><%= item['file'] %><% if item['line'] %>:<%= item['line'] %><% end %></code>
+                  <button onclick="navigator.clipboard.writeText('<%= item['file'] %>'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Path', 2000)" style="border: none; background: none; color: #6b7280; cursor: pointer; padding: 2px 6px; font-size: 12px; text-decoration: underline; margin-left: 6px;">Copy Path</button>
+                <% elsif !item['file'] && !is_reply %>
+                  • <span style="font-style: italic;">General comment</span>
+                <% end %>
+                <% if is_reviewed %>
+                  • <span style="color: #22c55e; font-weight: 600;">✓ Reviewed</span>
+                <% end %>
+              </div>
+              <% unless is_reviewed %>
+                <button onclick="markReviewed(<%= item['id'] %>, this.closest('div').closest('div'))" class="btn" style="padding: 6px 12px; font-size: 14px;">
+                  Mark Reviewed
+                </button>
+              <% end %>
+            </div>
+            <div style="white-space: pre-wrap; color: #374151;"><%= item['body'] %></div>
+          </div>
+        <% end %>
       </div>
     <% end %>
   <% else %>
@@ -94,14 +109,23 @@ function markReviewed(feedbackId, element) {
 
 function toggleReviewed() {
   const hideReviewed = document.getElementById('hide-reviewed').checked;
-  const items = document.querySelectorAll('.feedback-item');
+  const threads = document.querySelectorAll('.thread-container');
   
-  items.forEach(item => {
-    if (hideReviewed && item.dataset.reviewed === 'true') {
-      item.style.display = 'none';
-    } else {
-      item.style.display = 'block';
-    }
+  threads.forEach(thread => {
+    const items = thread.querySelectorAll('.feedback-item');
+    let hasVisibleItems = false;
+    
+    items.forEach(item => {
+      if (hideReviewed && item.dataset.reviewed === 'true') {
+        item.style.display = 'none';
+      } else {
+        item.style.display = 'block';
+        hasVisibleItems = true;
+      }
+    });
+    
+    // Hide entire thread container if all items are hidden
+    thread.style.display = hasVisibleItems ? 'block' : 'none';
   });
   
   updateFeedbackCount();
@@ -109,12 +133,17 @@ function toggleReviewed() {
 
 function updateFeedbackCount() {
   const hideReviewed = document.getElementById('hide-reviewed').checked;
-  const items = document.querySelectorAll('.feedback-item');
+  const threads = document.querySelectorAll('.thread-container');
   let count = 0;
   
-  items.forEach(item => {
-    if (!hideReviewed || item.dataset.reviewed !== 'true') {
-      count++;
+  threads.forEach(thread => {
+    if (thread.style.display !== 'none') {
+      const items = thread.querySelectorAll('.feedback-item');
+      items.forEach(item => {
+        if (item.style.display !== 'none') {
+          count++;
+        }
+      });
     }
   });
   
