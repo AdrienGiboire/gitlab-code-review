@@ -9,6 +9,7 @@ class ExportsController < ApplicationController
 
   def show
     @export = Export.find(params[:id])
+    @gitlab_username = Setting.gitlab_username
     respond_to do |format|
       format.html
       format.json { render json: @export }
@@ -22,7 +23,7 @@ class ExportsController < ApplicationController
     mr_url = params[:mr_url]
 
     unless mr_url
-      flash[:error] = 'MR URL is required'
+      flash[:error] = "MR URL is required"
       return redirect_to new_export_path
     end
 

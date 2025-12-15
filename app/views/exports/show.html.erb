@@ -36,10 +36,14 @@
           <% next unless item['id'] %>
           <% is_reviewed = reviewed_ids.include?(item['id'].to_s) %>
           <% is_reply = is_multi_comment && index > 0 %>
-          <div class="feedback-item" data-reviewed="<%= is_reviewed %>" style="padding: 16px; border-left: 3px solid <%= is_reviewed ? '#22c55e' : '#2563eb' %>; background: <%= is_reviewed ? '#f0fdf4' : '#ffffff' %>; margin-bottom: <%= is_multi_comment ? '12px' : '16px' %>; border-radius: 4px; <%= is_reply ? 'margin-left: 24px;' : '' %>">
+          <% is_own_comment = @gitlab_username.present? && item['author'] == @gitlab_username %>
+          <div class="feedback-item" data-reviewed="<%= is_reviewed %>" style="padding: 16px; border-left: 3px solid <%= is_reviewed ? '#22c55e' : (is_own_comment ? '#f59e0b' : '#2563eb') %>; background: <%= is_reviewed ? '#f0fdf4' : (is_own_comment ? '#fffbeb' : '#ffffff') %>; margin-bottom: <%= is_multi_comment ? '12px' : '16px' %>; border-radius: 4px; <%= is_reply ? 'margin-left: 24px;' : '' %>">
             <div style="margin-bottom: 8px; color: #6b7280; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <strong style="color: #1f2937;"><%= item['author'] %></strong>
+                <strong style="color: <%= is_own_comment ? '#d97706' : '#1f2937' %>;"><%= item['author'] %></strong>
+                <% if is_own_comment %>
+                  <span style="color: #f59e0b; font-size: 12px; margin-left: 4px;">(You)</span>
+                <% end %>
                 <% if item['file'] && !is_reply %>
                   • <code style="background: #e5e7eb;"><%= item['file'] %><% if item['line'] %>:<%= item['line'] %><% end %></code>
                   <button onclick="navigator.clipboard.writeText('<%= item['file'] %>'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Path', 2000)" style="border: none; background: none; color: #6b7280; cursor: pointer; padding: 2px 6px; font-size: 12px; text-decoration: underline; margin-left: 6px;">Copy Path</button>
@@ -66,11 +70,9 @@
   <% end %>
 </div>
 <p style="margin-top: 20px;"><a href="<%= exports_path %>">← Back to exports</a></p>
-
 <script>
 function markReviewed(feedbackId, element) {
   const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-  
   fetch('<%= mark_reviewed_export_feedback_path(@export, ':id') %>'.replace(':id', feedbackId), {
     method: 'PATCH',
     headers: {
@@ -81,24 +83,17 @@ function markReviewed(feedbackId, element) {
   })
   .then(response => response.json())
   .then(data => {
-    // Update UI without page reload
     element.style.borderLeftColor = '#22c55e';
     element.style.background = '#f0fdf4';
     element.dataset.reviewed = 'true';
-    
-    // Add reviewed indicator to the author/file line
     const authorDiv = element.querySelector('div > div');
     const reviewedSpan = document.createElement('span');
     reviewedSpan.style.color = '#22c55e';
     reviewedSpan.style.fontWeight = '600';
     reviewedSpan.textContent = ' • ✓ Reviewed';
     authorDiv.appendChild(reviewedSpan);
-    
-    // Remove button
     const button = element.querySelector('button.btn');
     if (button) button.remove();
-    
-    // Update count if filter is active
     updateFeedbackCount();
   })
   .catch(error => {
@@ -106,15 +101,12 @@ function markReviewed(feedbackId, element) {
     alert('Failed to mark as reviewed');
   });
 }
-
 function toggleReviewed() {
   const hideReviewed = document.getElementById('hide-reviewed').checked;
   const threads = document.querySelectorAll('.thread-container');
-  
   threads.forEach(thread => {
     const items = thread.querySelectorAll('.feedback-item');
     let hasVisibleItems = false;
-    
     items.forEach(item => {
       if (hideReviewed && item.dataset.reviewed === 'true') {
         item.style.display = 'none';
@@ -123,19 +115,14 @@ function toggleReviewed() {
         hasVisibleItems = true;
       }
     });
-    
-    // Hide entire thread container if all items are hidden
     thread.style.display = hasVisibleItems ? 'block' : 'none';
   });
-  
   updateFeedbackCount();
 }
-
 function updateFeedbackCount() {
   const hideReviewed = document.getElementById('hide-reviewed').checked;
   const threads = document.querySelectorAll('.thread-container');
   let count = 0;
-  
   threads.forEach(thread => {
     if (thread.style.display !== 'none') {
       const items = thread.querySelectorAll('.feedback-item');
@@ -146,7 +133,6 @@ function updateFeedbackCount() {
       });
     }
   });
-  
   document.getElementById('feedback-count').textContent = count;
 }
 </script>
