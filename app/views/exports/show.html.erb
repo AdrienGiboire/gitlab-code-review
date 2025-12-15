@@ -76,6 +76,9 @@
   <% end %>
 </div>
 <p style="margin-top: 20px;"><a href="<%= exports_path %>">← Back to exports</a></p>
+<button id="next-unreviewed-btn" onclick="goToNextUnreviewed()" style="position: fixed; bottom: 32px; right: 32px; padding: 16px 24px; background: #2563eb; color: white; border: none; border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; font-size: 16px; font-weight: 600; display: none; z-index: 1000; transition: all 0.2s;" onmouseover="this.style.background='#1d4ed8'; this.style.transform='scale(1.05)'" onmouseout="this.style.background='#2563eb'; this.style.transform='scale(1)'">
+  Next Unreviewed ↓
+</button>
 <script>
 function markReviewed(feedbackId, element) {
   const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -101,6 +104,7 @@ function markReviewed(feedbackId, element) {
     const button = element.querySelector('button.btn');
     if (button) button.remove();
     updateFeedbackCount();
+    updateNextButton();
   })
   .catch(error => {
     console.error('Error:', error);
@@ -124,6 +128,7 @@ function toggleReviewed() {
     thread.style.display = hasVisibleItems ? 'block' : 'none';
   });
   updateFeedbackCount();
+  updateNextButton();
 }
 function updateFeedbackCount() {
   const hideReviewed = document.getElementById('hide-reviewed').checked;
@@ -152,4 +157,43 @@ function toggleThread(threadContainer) {
     toggle.textContent = '▶';
   }
 }
+function goToNextUnreviewed() {
+  const items = Array.from(document.querySelectorAll('.feedback-item'));
+  const unreviewed = items.filter(item => item.dataset.reviewed !== 'true' && item.style.display !== 'none');
+  if (unreviewed.length === 0) return;
+  const viewportMiddle = window.scrollY + (window.innerHeight / 2);
+  let nextItem = unreviewed.find(item => {
+    const itemTop = item.getBoundingClientRect().top + window.scrollY;
+    return itemTop > viewportMiddle + 50;
+  });
+  if (!nextItem) {
+    nextItem = unreviewed[0];
+  }
+  const threadContainer = nextItem.closest('.thread-container');
+  const threadContent = threadContainer?.querySelector('.thread-content');
+  if (threadContent && threadContent.style.display === 'none') {
+    toggleThread(threadContainer);
+  }
+  nextItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  nextItem.style.transition = 'box-shadow 0.3s';
+  nextItem.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.3)';
+  setTimeout(() => {
+    nextItem.style.boxShadow = '';
+  }, 1500);
+}
+function updateNextButton() {
+  const items = document.querySelectorAll('.feedback-item');
+  const hasUnreviewed = Array.from(items).some(item => item.dataset.reviewed !== 'true' && item.style.display !== 'none');
+  const btn = document.getElementById('next-unreviewed-btn');
+  btn.style.display = hasUnreviewed ? 'block' : 'none';
+}
+window.addEventListener('load', updateNextButton);
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('next-unreviewed-btn');
+  if (window.scrollY > 200) {
+    btn.style.opacity = '1';
+  } else {
+    btn.style.opacity = '0.7';
+  }
+});
 </script>
