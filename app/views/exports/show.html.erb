@@ -28,10 +28,12 @@
       <% thread_all_reviewed = thread_items.all? { |item| reviewed_ids.include?(item['id'].to_s) } %>
       <div class="thread-container" data-discussion-id="<%= discussion_id %>" data-reviewed="<%= thread_all_reviewed %>" style="margin-bottom: 24px; <%= is_multi_comment ? 'border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; background: #fafafa;' : '' %>">
         <% if is_multi_comment %>
-          <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; font-weight: 600;">
-            💬 Thread (<%= thread_items.length %> comments)
+          <div onclick="toggleThread(this.closest('.thread-container'))" style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;">
+            <span class="thread-toggle">▼</span>
+            <span>💬 Thread (<%= thread_items.length %> comments)</span>
           </div>
         <% end %>
+        <div class="thread-content">
         <% thread_items.each_with_index do |item, index| %>
           <% next unless item['id'] %>
           <% is_reviewed = reviewed_ids.include?(item['id'].to_s) %>
@@ -66,6 +68,7 @@
             <div style="white-space: pre-wrap; color: #374151;"><%= item['body'] %></div>
           </div>
         <% end %>
+        </div>
       </div>
     <% end %>
   <% else %>
@@ -137,5 +140,16 @@ function updateFeedbackCount() {
     }
   });
   document.getElementById('feedback-count').textContent = count;
+}
+function toggleThread(threadContainer) {
+  const content = threadContainer.querySelector('.thread-content');
+  const toggle = threadContainer.querySelector('.thread-toggle');
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    toggle.textContent = '▼';
+  } else {
+    content.style.display = 'none';
+    toggle.textContent = '▶';
+  }
 }
 </script>
