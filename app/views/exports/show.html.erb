@@ -76,9 +76,14 @@
   <% end %>
 </div>
 <p style="margin-top: 20px;"><a href="<%= exports_path %>">← Back to exports</a></p>
-<button id="next-unreviewed-btn" onclick="goToNextUnreviewed()" style="position: fixed; bottom: 32px; right: 32px; padding: 16px 24px; background: #2563eb; color: white; border: none; border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; font-size: 16px; font-weight: 600; display: none; z-index: 1000; transition: all 0.2s;" onmouseover="this.style.background='#1d4ed8'; this.style.transform='scale(1.05)'" onmouseout="this.style.background='#2563eb'; this.style.transform='scale(1)'">
-  Next Unreviewed ↓
-</button>
+<div id="nav-buttons" style="position: fixed; bottom: 32px; right: 32px; display: none; gap: 8px; z-index: 1000;">
+  <button onclick="goToPrevUnreviewed()" style="padding: 14px 20px; background: #2563eb; color: white; border: none; border-radius: 8px 0 0 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
+    ↑ Prev
+  </button>
+  <button onclick="goToNextUnreviewed()" style="padding: 14px 20px; background: #2563eb; color: white; border: none; border-radius: 0 8px 8px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
+    Next ↓
+  </button>
+</div>
 <script>
 function markReviewed(feedbackId, element) {
   const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -181,19 +186,44 @@ function goToNextUnreviewed() {
     nextItem.style.boxShadow = '';
   }, 1500);
 }
+function goToPrevUnreviewed() {
+  const items = Array.from(document.querySelectorAll('.feedback-item'));
+  const unreviewed = items.filter(item => item.dataset.reviewed !== 'true' && item.style.display !== 'none');
+  if (unreviewed.length === 0) return;
+  const viewportMiddle = window.scrollY + (window.innerHeight / 2);
+  const unreviewedReversed = [...unreviewed].reverse();
+  let prevItem = unreviewedReversed.find(item => {
+    const itemBottom = item.getBoundingClientRect().bottom + window.scrollY;
+    return itemBottom < viewportMiddle - 50;
+  });
+  if (!prevItem) {
+    prevItem = unreviewed[unreviewed.length - 1];
+  }
+  const threadContainer = prevItem.closest('.thread-container');
+  const threadContent = threadContainer?.querySelector('.thread-content');
+  if (threadContent && threadContent.style.display === 'none') {
+    toggleThread(threadContainer);
+  }
+  prevItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  prevItem.style.transition = 'box-shadow 0.3s';
+  prevItem.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.3)';
+  setTimeout(() => {
+    prevItem.style.boxShadow = '';
+  }, 1500);
+}
 function updateNextButton() {
   const items = document.querySelectorAll('.feedback-item');
   const hasUnreviewed = Array.from(items).some(item => item.dataset.reviewed !== 'true' && item.style.display !== 'none');
-  const btn = document.getElementById('next-unreviewed-btn');
-  btn.style.display = hasUnreviewed ? 'block' : 'none';
+  const navButtons = document.getElementById('nav-buttons');
+  navButtons.style.display = hasUnreviewed ? 'flex' : 'none';
 }
 window.addEventListener('load', updateNextButton);
 window.addEventListener('scroll', () => {
-  const btn = document.getElementById('next-unreviewed-btn');
+  const navButtons = document.getElementById('nav-buttons');
   if (window.scrollY > 200) {
-    btn.style.opacity = '1';
+    navButtons.style.opacity = '1';
   } else {
-    btn.style.opacity = '0.7';
+    navButtons.style.opacity = '0.8';
   }
 });
 </script>
